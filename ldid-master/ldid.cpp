@@ -593,9 +593,10 @@ static size_t most(std::streambuf &stream, void *data, size_t size) {
 }
 
 static inline void pad(std::streambuf &stream, size_t size) {
-    char padding[size];
-    memset(padding, 0, size);
-    put(stream, padding, size);
+    if (size == 0)
+        return;
+    std::vector<char> padding(size, 0);
+    put(stream, padding.data(), size);
 }
 
 template <typename Type_>
@@ -2737,8 +2738,8 @@ class Expression {
     }
 
     bool operator ()(const std::string &data) {
-        regmatch_t matches[matches_.size()];
-        auto value(regexec(&regex_, data.c_str(), matches_.size(), matches, 0));
+        std::vector<regmatch_t> matches(matches_.size());
+        auto value(regexec(&regex_, data.c_str(), matches.size(), matches.data(), 0));
         if (value == REG_NOMATCH)
             return false;
         _assert_(value == 0, "regexec()");
@@ -2757,7 +2758,7 @@ struct Rule {
     Mode mode_;
     std::string code_;
 
-    mutable std::auto_ptr<Expression> regex_;
+    mutable std::shared_ptr<Expression> regex_;
 
     Rule(unsigned weight, Mode mode, const std::string &code) :
         weight_(weight),
@@ -3566,9 +3567,9 @@ int ldid_main(int argc, char *argv[]) {
                         auto type(directory->hashType);
                         _assert(type > 0 && type <= algorithms.size());
                         auto &algorithm(*algorithms[type - 1]);
-                        uint8_t hash[algorithm.size_];
-                        algorithm(hash, blob + begin, end - begin);
-                        candidates.insert({type, {directory, end - begin, algorithm, Hex(hash, 20)}});
+                        std::vector<uint8_t> hash(algorithm.size_);
+                        algorithm(hash.data(), blob + begin, end - begin);
+                        candidates.insert({type, {directory, end - begin, algorithm, Hex(hash.data(), algorithm.size_)}});
                     }
                 }
 

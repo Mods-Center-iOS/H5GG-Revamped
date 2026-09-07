@@ -21,12 +21,18 @@ jobs:
           repository: theos/theos
           path: theos
           ref: master
+          submodules: recursive
 
       - name: Setup Theos (macOS)
         if: runner.os == 'macOS'
         run: |
           echo "THEOS=$PWD/theos" >> $GITHUB_ENV
           brew install ldid xz
+          # Use the iOS SDK targeted by the project Makefiles.
+          curl -fL https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz -o sdk.tar.xz
+          mkdir -p "$PWD/theos/sdks"
+          tar xf sdk.tar.xz -C "$PWD/theos/sdks"
+          rm sdk.tar.xz
 
       - name: Setup Theos (Linux)
         if: runner.os == 'Linux'
@@ -35,14 +41,14 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq curl xz-utils fakeroot clang llvm lld
           # Download Linux toolchain
-          curl -L https://github.com/kabiroberai/swift-toolchain-linux/releases/download/v2.3.0/swift-5.8-ubuntu20.04.tar.xz -o tc.tar.xz
-          tar xf tc.tar.xz -C /opt
+          curl -fL https://github.com/kabiroberai/swift-toolchain-linux/releases/download/v2.3.0/swift-5.8-ubuntu20.04.tar.xz -o tc.tar.xz
+          mkdir -p "$PWD/theos/toolchain"
+          tar xf tc.tar.xz -C "$PWD/theos/toolchain"
           rm tc.tar.xz
-          echo "/opt/swift-5.8-ubuntu20.04/usr/bin" >> $GITHUB_PATH
           # Download SDK
-          curl -L https://github.com/theos/sdks/releases/download/latest/iPhoneOS16.5.sdk.tar.xz -o sdk.tar.xz
-          mkdir -p $PWD/theos/sdks
-          tar xf sdk.tar.xz -C $PWD/theos/sdks
+          curl -fL https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz -o sdk.tar.xz
+          mkdir -p "$PWD/theos/sdks"
+          tar xf sdk.tar.xz -C "$PWD/theos/sdks"
           rm sdk.tar.xz
 
       - name: Build
